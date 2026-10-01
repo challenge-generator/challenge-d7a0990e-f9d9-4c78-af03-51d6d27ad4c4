@@ -1,0 +1,114 @@
+scalar DateTime
+
+type Query {
+    messages(status: MessageStatus, limit: Int): [Message!]!
+    messageById(id: ID!): Message
+    messageStats: MessageStats!
+    healthCheck: HealthStatus!
+}
+
+type Mutation {
+    sendMessage(input: MessageInput!): MessageResult!
+    processMessageStream(messages: [MessageInput!]!): StreamResult!
+    retryMessage(id: ID!): MessageResult!
+    acknowledgeMessage(id: ID!): MessageResult!
+}
+
+type Subscription {
+    onMessageReceived: Message!
+    onMessageProcessed: Message!
+    onMessageError: MessageError!
+}
+
+type Message {
+    id: ID!
+    payload: String!
+    status: MessageStatus!
+    sourceService: String!
+    targetService: String
+    retryCount: Int!
+    createdAt: DateTime!
+    processedAt: DateTime
+    errorDetails: String
+    metadata: MessageMetadata
+}
+
+type MessageMetadata {
+    correlationId: String!
+    traceId: String
+    spanId: String
+    protocol: String!
+    contentType: String
+    priority: Int
+}
+
+type MessageStats {
+    totalMessages: Int!
+    pendingMessages: Int!
+    processedMessages: Int!
+    failedMessages: Int!
+    inRetryMessages: Int!
+    averageProcessingTimeMs: Float
+}
+
+type HealthStatus {
+    status: String!
+    services: [ServiceHealth!]!
+    timestamp: DateTime!
+}
+
+type ServiceHealth {
+    serviceName: String!
+    isHealthy: Boolean!
+    latencyMs: Int
+    lastCheck: DateTime!
+}
+
+type MessageResult {
+    success: Boolean!
+    message: Message
+    error: String
+}
+
+type StreamResult {
+    totalProcessed: Int!
+    successful: Int!
+    failed: Int!
+    results: [MessageResult!]!
+}
+
+type MessageError {
+    messageId: ID!
+    errorCode: String!
+    errorMessage: String!
+    timestamp: DateTime!
+    serviceName: String!
+}
+
+enum MessageStatus {
+    PENDING
+    PROCESSING
+    PROCESSED
+    FAILED
+    IN_RETRY
+    DLQ
+}
+
+input MessageInput {
+    payload: String!
+    sourceService: String!
+    targetService: String
+    correlationId: String
+    protocol: String = "HTTP"
+    contentType: String = "application/json"
+    priority: Int = 5
+}
+
+directive @auth(requires: Role) on FIELD_DEFINITION
+directive @rateLimit(max: Int, window: String) on FIELD_DEFINITION
+
+enum Role {
+    ADMIN
+    USER
+    SERVICE
+}

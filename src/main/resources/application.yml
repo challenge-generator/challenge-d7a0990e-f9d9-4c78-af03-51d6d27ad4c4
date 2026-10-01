@@ -1,0 +1,68 @@
+server:
+  port: 8080
+  netty:
+    connection-timeout: 5000ms
+
+spring:
+  main:
+    web-application-type: reactive
+  rsocket:
+    server:
+      transport: websocket
+      mapping-path: /rsocket
+      port: 7000
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000ms
+          multiplier: 2.0
+          max-interval: 10000ms
+    template:
+      retry:
+        enabled: true
+        max-attempts: 3
+  graphql:
+    graphiql:
+      enabled: true
+    schema:
+      printer:
+        enabled: true
+      locations: classpath:graphql/**/
+
+grpc:
+  server:
+    port: 9090
+    security:
+      enabled: false
+
+logging:
+  level:
+    org.springframework: INFO
+    io.rsocket: DEBUG
+    io.grpc: DEBUG
+    reactor.netty: DEBUG
+
+app:
+  protocols:
+    grpc:
+      service-name: ProtocolService
+      max-message-size: 10MB
+    rsocket:
+      route: protocolos.stream
+    amqp:
+      exchange: protocolos.exchange
+      queue: protocolos.queue
+      routing-key: protocolos.routingkey
+    graphql:
+      path: /graphql
+      subscriptions-path: /subscriptions

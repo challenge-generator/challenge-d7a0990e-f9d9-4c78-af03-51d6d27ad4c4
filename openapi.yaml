@@ -1,0 +1,422 @@
+openapi: 3.1.0
+info:
+  title: Protocolos de Integración API
+  description: API para comparación y gestión de protocolos de comunicación avanzados en arquitecturas de microservicios. Expone endpoints REST para interacción con RSocket, gRPC, AMQP y GraphQL.
+  version: 1.0.0
+  contact:
+    name: Equipo de Integración
+    email: integracion@empresa.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:8080
+    description: Servidor de desarrollo local
+  - url: https://api.integracion.empresa.com
+    description: Servidor de producción
+tags:
+  - name: Mensajería
+    description: Endpoints para gestión de mensajes a través de diferentes protocolos
+  - name: Protocolos
+    description: Endpoints para comparación y diagnóstico de protocolos
+  - name: Health
+    description: Endpoints de verificación de estado del servicio
+paths:
+  /api/v1/messages:
+    post:
+      tags:
+        - Mensajería
+      summary: Procesar un mensaje a través del pipeline de integración
+      operationId: processMessage
+      requestBody:
+        description: Modelo del mensaje a procesar
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageModel'
+            example:
+              payload: "{\"tipo\":\"orden\",\"id\":12345,\"monto\":1000.50}"
+              sourceService: orders-api
+              targetService: inventory-service
+              correlationId: corr-abc-123-def
+      responses:
+        '200':
+          description: Mensaje procesado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageModel'
+        '400':
+          description: Solicitud inválida - datos de entrada mal formados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno al procesar el mensaje
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/messages/stream:
+    post:
+      tags:
+        - Mensajería
+      summary: Procesar un stream de mensajes de forma reactiva
+      operationId: processMessageStream
+      requestBody:
+        description: Stream de mensajes a procesar
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/MessageModel'
+      responses:
+        '200':
+          description: Stream de mensajes procesado exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MessageModel'
+        '400':
+          description: Solicitud inválida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/protocols/compare:
+    get:
+      tags:
+        - Protocolos
+      summary: Obtener comparación de protocolos de comunicación
+      operationId: getProtocolComparison
+      parameters:
+        - name: protocolA
+          in: query
+          description: Primer protocolo a comparar
+          required: false
+          schema:
+            type: string
+            enum:
+              - RSOCKET
+              - GRPC
+              - HTTP1
+              - HTTP2
+              - WEBSOCKET
+              - AMQP
+        - name: protocolB
+          in: query
+          description: Segundo protocolo a comparar
+          required: false
+          schema:
+            type: string
+            enum:
+              - RSOCKET
+              - GRPC
+              - HTTP1
+              - HTTP2
+              - WEBSOCKET
+              - AMQP
+      responses:
+        '200':
+          description: Comparación de protocolos retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtocolComparison'
+  /api/v1/protocols/rsocket/status:
+    get:
+      tags:
+        - Protocolos
+      summary: Verificar estado del servicio RSocket
+      operationId: getRSocketStatus
+      responses:
+        '200':
+          description: Estado del servicio RSocket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtocolStatus'
+  /api/v1/protocols/grpc/status:
+    get:
+      tags:
+        - Protocolos
+      summary: Verificar estado del servicio gRPC
+      operationId: getGrpcStatus
+      responses:
+        '200':
+          description: Estado del servicio gRPC
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtocolStatus'
+  /api/v1/protocols/amqp/status:
+    get:
+      tags:
+        - Protocolos
+      summary: Verificar estado del broker AMQP
+      operationId: getAmqpStatus
+      responses:
+        '200':
+          description: Estado del broker AMQP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtocolStatus'
+  /api/v1/protocols/graphql/status:
+    get:
+      tags:
+        - Protocolos
+      summary: Verificar estado del servidor GraphQL
+      operationId: getGraphQLStatus
+      responses:
+        '200':
+          description: Estado del servidor GraphQL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtocolStatus'
+  /api/v1/health:
+    get:
+      tags:
+        - Health
+      summary: Verificar estado general del servicio
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Servicio saludable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /api/v1/health/ready:
+    get:
+      tags:
+        - Health
+      summary: Verificar disponibilidad para recibir tráfico
+      operationId: readinessCheck
+      responses:
+        '200':
+          description: Servicio listo para recibir tráfico
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /api/v1/health/live:
+    get:
+      tags:
+        - Health
+      summary: Verificar que el servicio está corriendo
+      operationId: livenessCheck
+      responses:
+        '200':
+          description: Servicio vivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+components:
+  schemas:
+    MessageModel:
+      type: object
+      description: Modelo canónico de mensaje para comunicación entre servicios
+      required:
+        - payload
+        - sourceService
+        - status
+      properties:
+        payload:
+          type: string
+          description: Contenido serializado del mensaje (JSON, XML, etc.)
+          example: "{\"tipo\":\"orden\",\"id\":12345}"
+        sourceService:
+          type: string
+          description: Identificador del servicio que origina el mensaje
+          example: orders-api
+        targetService:
+          type: string
+          description: Identificador del servicio destino del mensaje
+          example: inventory-service
+        correlationId:
+          type: string
+          description: Identificador de correlación para trazabilidad distribuida
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        status:
+          $ref: '#/components/schemas/MessageStatus'
+        retryCount:
+          type: integer
+          description: Número de reintentos realizados
+          minimum: 0
+          default: 0
+          example: 2
+        timestamp:
+          type: string
+          description: Timestamp de creación del mensaje
+          format: date-time
+          example: 2024-01-15T10:30:00Z
+        errorDetails:
+          type: string
+          description: Detalles del último error ocurrido
+          nullable: true
+    MessageStatus:
+      type: string
+      enum:
+        - PENDING
+        - PROCESSING
+        - COMPLETED
+        - FAILED
+        - DLQ
+      description: Estados posibles del ciclo de vida del mensaje
+      example: PENDING
+    ProtocolComparison:
+      type: object
+      description: Resultado de comparación entre dos protocolos
+      properties:
+        protocolA:
+          type: string
+          description: Nombre del primer protocolo
+          example: RSOCKET
+        protocolB:
+          type: string
+          description: Nombre del segundo protocolo
+          example: GRPC
+        comparisonPoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComparisonPoint'
+    ComparisonPoint:
+      type: object
+      description: Punto específico de comparación entre protocolos
+      properties:
+        criterion:
+          type: string
+          description: Criterio de comparación
+          example: Latencia
+        valueA:
+          type: string
+          description: Valor o descripción para el protocolo A
+          example: < 5ms
+        valueB:
+          type: string
+          description: Valor o descripción para el protocolo B
+          example: 10-50ms
+        winner:
+          type: string
+          description: Protocolo que gana en este punto
+          enum:
+            - A
+            - B
+            - TIE
+    ProtocolStatus:
+      type: object
+      description: Estado de un protocolo específico
+      properties:
+        protocol:
+          type: string
+          description: Nombre del protocolo
+          example: RSOCKET
+        available:
+          type: boolean
+          description: Indica si el protocolo está disponible
+          example: true
+        latencyMs:
+          type: number
+          format: double
+          description: Latencia promedio en milisegundos
+          example: 3.5
+        activeConnections:
+          type: integer
+          description: Número de conexiones activas
+          example: 42
+        lastCheck:
+          type: string
+          format: date-time
+          description: Timestamp del último check
+          example: 2024-01-15T10:30:00Z
+    HealthResponse:
+      type: object
+      description: Respuesta de verificación de salud del servicio
+      properties:
+        status:
+          type: string
+          enum:
+            - UP
+            - DOWN
+            - DEGRADED
+          description: Estado general del servicio
+          example: UP
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp de la verificación
+          example: 2024-01-15T10:30:00Z
+        services:
+          type: object
+          description: Estado de cada subsistema
+          additionalProperties:
+            $ref: '#/components/schemas/ServiceHealth'
+    ServiceHealth:
+      type: object
+      description: Estado de un servicio específico
+      properties:
+        status:
+          type: string
+          enum:
+            - UP
+            - DOWN
+          example: UP
+        latencyMs:
+          type: number
+          format: double
+          nullable: true
+          description: Latencia del servicio
+    ErrorResponse:
+      type: object
+      description: Estructura estándar de respuesta de error
+      required:
+        - error
+        - message
+        - timestamp
+      properties:
+        error:
+          type: string
+          description: Código de error técnico
+          example: MESSAGE_PROCESSING_ERROR
+        message:
+          type: string
+          description: Descripción legible del error
+          example: Error al procesar el mensaje en el servicio destino
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp del error
+          example: 2024-01-15T10:30:00Z
+        details:
+          type: object
+          description: Información adicional de debug
+          nullable: true
+        correlationId:
+          type: string
+          format: uuid
+          description: Correlation ID para trazabilidad
+          nullable: true
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT para autenticación
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API Key para acceso a la API
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []

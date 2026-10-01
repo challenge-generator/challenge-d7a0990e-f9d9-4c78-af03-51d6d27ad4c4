@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.integracion.protocolos.proto";
+option java_outer_classname = "ServiceProto";
+
+package com.integracion.protocolos;
+
+message ProcessRequest {
+    string request_id = 1;
+    string payload = 2;
+    map<string, string> metadata = 3;
+    int32 priority = 4;
+}
+
+message ProcessResponse {
+    string response_id = 1;
+    string payload = 2;
+    string status = 3;
+    string timestamp = 4;
+    bool success = 5;
+    string error_message = 6;
+}
+
+message StreamRequest {
+    string request_id = 1;
+    string payload = 2;
+    int32 message_count = 3;
+    int32 delay_ms = 4;
+}
+
+message StreamResponse {
+    string response_id = 1;
+    string payload = 2;
+    string status = 3;
+    string timestamp = 4;
+    int32 sequence_number = 5;
+    bool success = 6;
+}
+
+message BatchRequest {
+    repeated ProcessRequest requests = 1;
+    string batch_id = 2;
+    bool allow_partial_failure = 3;
+}
+
+message BatchResponse {
+    repeated ProcessResponse responses = 1;
+    string batch_id = 2;
+    int32 success_count = 3;
+    int32 failure_count = 4;
+}
+
+service Service {
+    rpc ProcessMessage(ProcessRequest) returns (ProcessResponse);
+    
+    rpc ProcessMessageStream(StreamRequest) returns (stream StreamResponse);
+    
+    rpc BidirectionalStream(stream ProcessRequest) returns (stream ProcessResponse);
+    
+    rpc ProcessBatch(BatchRequest) returns (BatchResponse);
+}
